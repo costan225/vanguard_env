@@ -47,38 +47,15 @@ services:
     env_file:
       - ./hadoop.env
 
-  hive-metastore:
-    image: coomia/hive3:1.0
-    container_name: hive-metastore
-    volumes:
-      - /data/tools:/tools
-    env_file:
-      - ./hadoop.env
-    command: /opt/hive/bin/hive --service metastore
+  hiveserver2:
+    image: apache/hive:4.0.0
+    container_name: hiveserver2
     environment:
-      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 hive-metastore-pg:5432"
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
+      SERVICE_NAME: hiveserver2
     ports:
-      - "9083:9083"
-  hive-metastore-pg:
-    image: coomia/hive-metastore-pg:1.0
-    container_name: hive-metastore-pg
-  hive-server:
-    image: coomia/hive3:1.0
-    container_name: hive-server
-    env_file:
-      - ./hadoop.env
-    environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
-      SERVICE_PRECONDITION: "hive-metastore:9083"
-      HIVE_SITE_CONF_hive_server2_thrift_port: "10000"
-    ports:
-      - "10000:10000"
-
-        #  zookeeper:
-        #    image: coomia/zookeeper:0.1
-        #    container_name: zookeeper
-        #    ports:
-        #      - 2181:2181
+      - "10000:10000" # HiveServer2 默认端口
+      - "10002:10002" # 可选端口
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -120,16 +97,6 @@ services:
     depends_on:
       - kafka
 
-        #  prestodb:
-        #    image: coomia/prestodb:0.1
-        #    container_name: prestodb
-        #    ports:
-        #      - "9999:8080"
-        #    volumes:
-        #      - ./conf/standalone:/opt/presto/etc:ro
-        #      - /data/presto:/data
-        #    restart: unless-stopped
- 
   hbase-master:
     image: coomia/hbase2.2:0.1
     container_name: hbase-master
@@ -169,52 +136,6 @@ services:
       - 8085:8085
     depends_on:
       - zookeeper
-
-        #  alluxio-master:
-        #    image: coomia/alluxio:2.7.1
-        #    container_name: alluxio-master
-        #    volumes:
-        #      - alluxio-journal:/opt/alluxio/journal
-        #      - alluxio-ufs:/opt/alluxio/underFSStorage/
-        #    user: root
-        #    entrypoint: [ bash, -xeuc ]
-        #    environment:
-        #      - ALLUXIO_JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=45.0
-        #    command:
-        #      - |
-        #        JOURNAL_FOLDER=$$(alluxio getConf alluxio.master.journal.folder)
-        #        if [ ! -d "$$JOURNAL_FOLDER" ]; then
-        #          alluxio formatJournal
-        #        fi
-        #        exec /entrypoint.sh master --no-format
-        #    ports:
-        #      - 19999:19999
-        #
-        #  alluxio-worker:
-        #    image: coomia/alluxio:2.7.1
-        #    container_name: alluxio-worker
-        #    volumes:
-        #      - alluxio-ufs:/opt/alluxio/underFSStorage/
-        #      - alluxio-worker-data:/alluxio-worker-data
-        #    user: root
-        #    command: worker --no-format
-        #    environment:
-        #      - ALLUXIO_JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=45.0
-        #      - ALLUXIO_WORKER_TIEREDSTORE_LEVEL0_DIRS_PATH=/alluxio-worker-data
-        #    depends_on:
-        #      - alluxio-master
-        #
-        #  alluxio-proxy:
-        #    image: coomia/alluxio:2.7.1
-        #    container_name: alluxio-proxy
-        #    user: root
-        #    command: proxy
-        #    environment:
-        #      - ALLUXIO_JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
-        #    ports:
-        #      - 39999:39999
-        #    depends_on:
-        #      - alluxio-master
 
 volumes:
   alluxio-worker-data:
